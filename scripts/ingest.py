@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 import argparse
+import sys
 from pathlib import Path
 
-from app.rag.chunking import chunk_documents
-from app.rag.store import add_documents, load_documents_from_directory
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from app.rag.chunking import chunk_documents  # noqa: E402
+from app.rag.store import add_documents, load_documents_from_directory  # noqa: E402
 
 
 def ingest_directory(data_dir: str | Path) -> int:

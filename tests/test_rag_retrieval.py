@@ -7,7 +7,7 @@ from langchain_core.documents import Document
 
 def test_rag_retrieval_recalls_relevant_chunk(tmp_path, monkeypatch) -> None:
     db_path = tmp_path / "milvus_local.db"
-    monkeypatch.setenv("MILVUS_URI", str(db_path))
+    monkeypatch.setenv("MILVUS_DB_URI", str(db_path))
     monkeypatch.setenv("MILVUS_COLLECTION_NAME", "test_research")
     monkeypatch.setenv("EMBEDDING_PROVIDER", "huggingface")
     monkeypatch.setenv("EMBEDDING_MODEL", "BAAI/bge-small-zh-v1.5")
