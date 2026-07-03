@@ -67,7 +67,7 @@ curl -X POST http://127.0.0.1:8000/research \
 - `LLM_MODEL`：默认 `gpt-4o-mini`
 - `EMBEDDING_PROVIDER`：`huggingface` 或 `openai`
 - `EMBEDDING_MODEL`：默认 `BAAI/bge-small-zh-v1.5`
-- `MILVUS_URI`：默认 `./.milvus/milvus_local.db`
+- `MILVUS_DB_URI`：默认 `./.milvus/milvus_local.db`（不用 `MILVUS_URI`，该名与 pymilvus 保留环境变量冲突）
 - `MILVUS_COLLECTION_NAME`：默认 `tragword`
 - `SEARCH_ENABLED`：是否启用 DDGS 搜索
 - `MAX_REVISIONS`：最大回炉次数，防止死循环
@@ -77,13 +77,13 @@ curl -X POST http://127.0.0.1:8000/research \
 默认使用 **Milvus Lite** 的本地 `.db` 文件模式：
 
 ```bash
-MILVUS_URI=./.milvus/milvus_local.db
+MILVUS_DB_URI=./.milvus/milvus_local.db
 ```
 
-如果后续想切换到远程 Milvus / Zilliz Cloud，只需要改 `MILVUS_URI`，例如：
+如果后续想切换到远程 Milvus / Zilliz Cloud，只需要改 `MILVUS_DB_URI`，例如：
 
 ```bash
-MILVUS_URI=http://127.0.0.1:19530
+MILVUS_DB_URI=http://127.0.0.1:19530
 ```
 
 同一个 `MILVUS_COLLECTION_NAME` 下即可复用现有入库逻辑。

@@ -26,7 +26,7 @@ class Settings(BaseSettings):
         alias="OPENAI_EMBEDDING_MODEL",
     )
 
-    milvus_uri: str = Field(default="./.milvus/milvus_local.db", alias="MILVUS_URI")
+    milvus_uri: str = Field(default="./.milvus/milvus_local.db", alias="MILVUS_DB_URI")
     milvus_collection_name: str = Field(default="tragword", alias="MILVUS_COLLECTION_NAME")
     top_k: int = Field(default=4, alias="TOP_K")
     search_enabled: bool = Field(default=True, alias="SEARCH_ENABLED")
