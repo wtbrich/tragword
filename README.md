@@ -6,10 +6,11 @@
 
 1. 输入研究题目
 2. Planner 拆解子问题
-3. Retriever 使用本地向量检索 + 可选 DDGS 联网搜索收集资料
-4. Writer 基于资料生成 Markdown 草稿
-5. Reviewer 审核
-6. 不合格则回炉重写，直到通过或达到最大修订次数
+3. 可选提纲审批后再进入检索
+4. Retriever 使用本地向量检索 + 可选 DDGS 联网搜索收集资料
+5. Writer 基于资料生成 Markdown 草稿
+6. Reviewer 审核
+7. 不合格则回炉重写，直到通过或达到最大修订次数
 
 ## 目录说明
 
@@ -17,10 +18,10 @@
 - `app/llm.py`：OpenAI 兼容 LLM 工厂
 - `app/rag/`：切块、Embedding、Milvus 存储、混合检索、重排
 - `app/agents/`：Planner / Retriever / Writer / Reviewer
-- `app/graph/`：LangGraph 状态、编排与流式事件
-- `app/api.py`：FastAPI `POST /research` 和 `POST /research/stream`
+- `app/graph/`：LangGraph 状态、编排、流式事件、提纲审批与 checkpoint
+- `app/api.py`：FastAPI `POST /research`、`POST /research/stream`、`POST /research/interactive/*`
 - `scripts/ingest.py`：把 `data/` 里的文档入库
-- `ui/streamlit_app.py`：可选前端，支持实时流式输出
+- `ui/streamlit_app.py`：可选前端，支持同步、实时流式输出和提纲审批模式
 
 ## 快速开始
 
@@ -54,6 +55,8 @@ uvicorn app.api:app --reload
 
 ### 5. 调用研究接口
 
+同步接口：
+
 ```bash
 curl -X POST http://127.0.0.1:8000/research \
   -H "Content-Type: application/json" \
@@ -68,6 +71,12 @@ curl -N -X POST http://127.0.0.1:8000/research/stream \
   -d '{"topic":"构建一个面向企业知识库的 Multi-Agent 研究助手"}'
 ```
 
+提纲审批流程：
+
+1. `POST /research/interactive/start`
+2. 人工修改返回的 `sub_questions`
+3. `POST /research/interactive/resume`
+
 ## 环境变量
 
 - `OPENAI_API_KEY`：OpenAI 兼容接口 Key
@@ -75,7 +84,7 @@ curl -N -X POST http://127.0.0.1:8000/research/stream \
 - `LLM_MODEL`：默认 `gpt-4o-mini`
 - `EMBEDDING_PROVIDER`：`huggingface` 或 `openai`
 - `EMBEDDING_MODEL`：默认 `BAAI/bge-small-zh-v1.5`
-- `MILVUS_DB_URI`：默认 `./.milvus/milvus_local.db`（不用 `MILVUS_URI`，该名与 pymilvus 保留环境变量冲突）
+- `MILVUS_DB_URI`：默认 `./.milvus/milvus_local.db`
 - `MILVUS_COLLECTION_NAME`：默认 `tragword`
 - `HYBRID_ENABLED`：是否启用 Milvus + BM25 混合检索
 - `RERANK_ENABLED`：是否启用 cross-encoder 重排
@@ -84,6 +93,7 @@ curl -N -X POST http://127.0.0.1:8000/research/stream \
 - `MULTIQUERY_ENABLED`：是否启用多查询扩展，默认关闭
 - `SEARCH_ENABLED`：是否启用 DDGS 搜索
 - `MAX_REVISIONS`：最大回炉次数，防止死循环
+- `CHECKPOINT_DB`：提纲审批模式的 SQLite checkpoint 路径，默认 `.langgraph/checkpoints.sqlite`
 
 ## Milvus Lite 本地模式
 
@@ -101,9 +111,12 @@ MILVUS_DB_URI=http://127.0.0.1:19530
 
 同一个 `MILVUS_COLLECTION_NAME` 下即可复用现有入库逻辑。
 
-## 流式 UI
+## 流式 UI 与提纲审批模式
 
 - 本项目默认使用本地 `bge-small-zh-v1.5` 做 Embedding，适合离线检索。
 - LLM 通过 `ChatOpenAI` 封装，支持 OpenAI / DeepSeek / 通义等 OpenAI 兼容服务。
 - 如果没有配置 Key，代码依然可以 import 和启动；真正执行研究任务时会尽量优雅降级。
-- Streamlit 前端提供“实时流式输出”开关，会订阅 `/research/stream` 并逐步展示 planner / retrieve_one / writer / reviewer 事件。
+- Streamlit 前端提供三种模式：
+  - 同步执行
+  - 实时流式输出（订阅 `/research/stream`）
+  - 提纲审批模式（先调 `/research/interactive/start`，再调 `/research/interactive/resume`）

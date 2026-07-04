@@ -16,6 +16,7 @@ def merge_question(left: str | None, right: str | None) -> str | None:
 
 class ResearchState(TypedDict, total=False):
     topic: str
+    require_approval: bool
     sub_questions: list[str]
     question: Annotated[str | None, merge_question]
     retrieved: Annotated[
