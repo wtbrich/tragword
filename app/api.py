@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 
 from app.config import get_settings
 from app.graph.build import build_graph
+from app.graph.interactive import resume_research, start_research
 from app.graph.stream import stream_research
 
 
@@ -29,6 +30,18 @@ class ResearchResponse(BaseModel):
     final_report: str
 
 
+class InteractiveStartRequest(BaseModel):
+    topic: str = Field(min_length=1)
+    max_revisions: int | None = Field(default=None, ge=0)
+    thread_id: str | None = None
+
+
+class InteractiveResumeRequest(BaseModel):
+    thread_id: str = Field(min_length=1)
+    approved: bool
+    sub_questions: list[str] | None = None
+
+
 app = FastAPI(title='Tragword Research Assistant', version='0.1.0')
 graph = build_graph()
 
@@ -41,9 +54,16 @@ def _initial_state(request: ResearchRequest) -> dict[str, object]:
         'approved': False,
         'review_notes': '',
         'max_revisions': (
-            request.max_revisions if request.max_revisions is not None else settings.max_revisions
+            request.max_revisions
+            if request.max_revisions is not None
+            else settings.max_revisions
         ),
     }
+
+
+def _sse_events(events: Iterator[dict[str, object]]) -> Iterator[str]:
+    for event in events:
+        yield f"data: {json.dumps(event, ensure_ascii=False)}\n\n"
 
 
 @app.post('/research', response_model=ResearchResponse)
@@ -71,7 +91,31 @@ def research(request: ResearchRequest) -> ResearchResponse:
 @app.post('/research/stream')
 def research_stream(request: ResearchRequest) -> StreamingResponse:
     def event_stream() -> Iterator[str]:
-        for event in stream_research(request.topic, max_revisions=request.max_revisions):
-            yield f"data: {json.dumps(event, ensure_ascii=False)}\n\n"
+        yield from _sse_events(
+            stream_research(request.topic, max_revisions=request.max_revisions)
+        )
+
+    return StreamingResponse(event_stream(), media_type='text/event-stream')
+
+
+@app.post('/research/interactive/start')
+def research_interactive_start(request: InteractiveStartRequest) -> dict[str, object]:
+    return start_research(
+        request.topic,
+        thread_id=request.thread_id,
+        max_revisions=request.max_revisions,
+    )
+
+
+@app.post('/research/interactive/resume')
+def research_interactive_resume(request: InteractiveResumeRequest) -> StreamingResponse:
+    def event_stream() -> Iterator[str]:
+        yield from _sse_events(
+            resume_research(
+                request.thread_id,
+                approved=request.approved,
+                sub_questions=request.sub_questions,
+            )
+        )
 
     return StreamingResponse(event_stream(), media_type='text/event-stream')
