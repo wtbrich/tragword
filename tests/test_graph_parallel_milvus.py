@@ -1,3 +1,4 @@
+from app.agents.reviewer import ReviewResult
 from app.config import get_settings
 from app.graph.build import build_graph
 from app.rag.chunking import chunk_documents
@@ -16,6 +17,27 @@ def test_graph_parallel_retrieval_with_real_milvus(tmp_path, monkeypatch) -> Non
     get_settings.cache_clear()
     get_vectorstore.cache_clear()
     get_embeddings.cache_clear()
+
+    from app.graph import build as build_module
+
+    monkeypatch.setattr(
+        build_module,
+        'plan_sub_questions',
+        lambda topic: [
+            f'{topic} 的背景是什么？',
+            f'{topic} 的关键步骤是什么？',
+        ],
+    )
+    monkeypatch.setattr(
+        build_module,
+        'write_report',
+        lambda **kwargs: '# draft\n\n[1] evidence\n',
+    )
+    monkeypatch.setattr(
+        build_module,
+        'review_report',
+        lambda topic, draft: ReviewResult(approved=True, notes='approved'),
+    )
 
     docs = [
         Document(
