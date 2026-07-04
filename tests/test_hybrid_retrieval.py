@@ -6,10 +6,10 @@ from app.rag.store import add_documents, get_vectorstore
 from langchain_core.documents import Document
 
 
-def test_rag_retrieval_recalls_relevant_chunk(tmp_path, monkeypatch) -> None:
+def test_hybrid_retrieval_uses_bm25_exact_keyword(tmp_path, monkeypatch) -> None:
     db_path = tmp_path / 'milvus_local.db'
     monkeypatch.setenv('MILVUS_DB_URI', str(db_path))
-    monkeypatch.setenv('MILVUS_COLLECTION_NAME', 'test_research')
+    monkeypatch.setenv('MILVUS_COLLECTION_NAME', 'hybrid_research')
     monkeypatch.setenv('EMBEDDING_PROVIDER', 'huggingface')
     monkeypatch.setenv('EMBEDDING_MODEL', 'BAAI/bge-small-zh-v1.5')
     monkeypatch.setenv('HYBRID_ENABLED', 'true')
@@ -21,24 +21,24 @@ def test_rag_retrieval_recalls_relevant_chunk(tmp_path, monkeypatch) -> None:
 
     docs = [
         Document(
-            page_content='向量检索会把文本编码为向量，然后使用相似度搜索找到相关内容。',
-            metadata={'source': 'doc1.md'},
+            page_content='向量检索适合语义相似的内容召回。',
+            metadata={'source': 'semantic.md'},
         ),
         Document(
-            page_content='LangGraph 适合多步骤、可循环的智能体工作流编排。',
-            metadata={'source': 'doc2.md'},
+            page_content='BM25_ONLY_TOKEN_2026 是一个只靠关键词就能命中的稀有标记。',
+            metadata={'source': 'keyword.md'},
         ),
         Document(
-            page_content='传统关键词搜索依赖精确词匹配。',
-            metadata={'source': 'doc3.md'},
+            page_content='回炉重写有助于提升报告质量。',
+            metadata={'source': 'report.md'},
         ),
     ]
 
     chunks = chunk_documents(docs)
     add_documents(chunks)
 
-    results = retrieve_snippets('什么是向量检索？', top_k=2)
+    results = retrieve_snippets('BM25_ONLY_TOKEN_2026 是什么？', top_k=3)
 
     assert results
-    assert any('向量检索' in item['text'] for item in results)
-    assert results[0]['source']
+    assert any(item['source'] == 'keyword.md' for item in results)
+    assert any('BM25_ONLY_TOKEN_2026' in item['text'] for item in results)
