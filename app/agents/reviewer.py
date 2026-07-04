@@ -18,7 +18,7 @@ def _fallback_review(draft: str) -> ReviewResult:
 
 def review_report(topic: str, draft: str) -> ReviewResult:
     try:
-        llm = get_chat_model().with_structured_output(ReviewResult)
+        llm = get_chat_model().with_structured_output(ReviewResult, method="function_calling")
         result = llm.invoke(
             [
                 (
