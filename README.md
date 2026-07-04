@@ -15,7 +15,7 @@
 
 - `app/config.py`：环境变量配置
 - `app/llm.py`：OpenAI 兼容 LLM 工厂
-- `app/rag/`：切块、Embedding、Milvus 存储、检索
+- `app/rag/`：切块、Embedding、Milvus 存储、混合检索、重排
 - `app/agents/`：Planner / Retriever / Writer / Reviewer
 - `app/graph/`：LangGraph 状态与编排
 - `app/api.py`：FastAPI `POST /research`
@@ -69,6 +69,11 @@ curl -X POST http://127.0.0.1:8000/research \
 - `EMBEDDING_MODEL`：默认 `BAAI/bge-small-zh-v1.5`
 - `MILVUS_DB_URI`：默认 `./.milvus/milvus_local.db`（不用 `MILVUS_URI`，该名与 pymilvus 保留环境变量冲突）
 - `MILVUS_COLLECTION_NAME`：默认 `tragword`
+- `HYBRID_ENABLED`：是否启用 Milvus + BM25 混合检索
+- `RERANK_ENABLED`：是否启用 cross-encoder 重排
+- `RERANK_MODEL`：默认 `BAAI/bge-reranker-base`
+- `RERANK_CANDIDATES`：重排前候选池大小
+- `MULTIQUERY_ENABLED`：是否启用多查询扩展，默认关闭
 - `SEARCH_ENABLED`：是否启用 DDGS 搜索
 - `MAX_REVISIONS`：最大回炉次数，防止死循环
 

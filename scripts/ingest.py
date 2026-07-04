@@ -17,7 +17,9 @@ def ingest_directory(data_dir: str | Path) -> int:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Ingest local documents into Milvus.")
+    parser = argparse.ArgumentParser(
+        description="Ingest local documents into Milvus and the chunks sidecar.",
+    )
     parser.add_argument("--data-dir", default="data", help="资料目录，默认 data/")
     args = parser.parse_args()
 
