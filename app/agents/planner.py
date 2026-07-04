@@ -18,7 +18,7 @@ def _fallback_plan(topic: str) -> list[str]:
 
 def plan_sub_questions(topic: str) -> list[str]:
     try:
-        llm = get_chat_model().with_structured_output(PlanResult)
+        llm = get_chat_model().with_structured_output(PlanResult, method="function_calling")
         result = llm.invoke(
             [
                 (
