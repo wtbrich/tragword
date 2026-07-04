@@ -17,10 +17,10 @@
 - `app/llm.py`：OpenAI 兼容 LLM 工厂
 - `app/rag/`：切块、Embedding、Milvus 存储、混合检索、重排
 - `app/agents/`：Planner / Retriever / Writer / Reviewer
-- `app/graph/`：LangGraph 状态与编排
-- `app/api.py`：FastAPI `POST /research`
+- `app/graph/`：LangGraph 状态、编排与流式事件
+- `app/api.py`：FastAPI `POST /research` 和 `POST /research/stream`
 - `scripts/ingest.py`：把 `data/` 里的文档入库
-- `ui/streamlit_app.py`：可选前端
+- `ui/streamlit_app.py`：可选前端，支持实时流式输出
 
 ## 快速开始
 
@@ -60,6 +60,14 @@ curl -X POST http://127.0.0.1:8000/research \
   -d '{"topic":"构建一个面向企业知识库的 Multi-Agent 研究助手"}'
 ```
 
+流式接口：
+
+```bash
+curl -N -X POST http://127.0.0.1:8000/research/stream \
+  -H "Content-Type: application/json" \
+  -d '{"topic":"构建一个面向企业知识库的 Multi-Agent 研究助手"}'
+```
+
 ## 环境变量
 
 - `OPENAI_API_KEY`：OpenAI 兼容接口 Key
@@ -93,8 +101,9 @@ MILVUS_DB_URI=http://127.0.0.1:19530
 
 同一个 `MILVUS_COLLECTION_NAME` 下即可复用现有入库逻辑。
 
-## 说明
+## 流式 UI
 
 - 本项目默认使用本地 `bge-small-zh-v1.5` 做 Embedding，适合离线检索。
 - LLM 通过 `ChatOpenAI` 封装，支持 OpenAI / DeepSeek / 通义等 OpenAI 兼容服务。
 - 如果没有配置 Key，代码依然可以 import 和启动；真正执行研究任务时会尽量优雅降级。
+- Streamlit 前端提供“实时流式输出”开关，会订阅 `/research/stream` 并逐步展示 planner / retrieve_one / writer / reviewer 事件。

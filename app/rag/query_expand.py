@@ -28,6 +28,8 @@ def expand_query(query: str) -> list[str]:
                 ('human', f'原始问题：{query}'),
             ]
         )
+        if not isinstance(result, QueryExpansionResult):
+            return [query]
         queries: list[str] = []
         for item in result.queries:
             text = item.strip()

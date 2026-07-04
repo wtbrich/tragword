@@ -2,7 +2,7 @@ from app.config import get_settings
 from app.rag.hybrid import build_hybrid_retriever
 from app.rag.query_expand import expand_query
 from app.rag.rerank import rerank
-from app.rag.store import get_vectorstore
+from app.rag.store import milvus_lock, similarity_search
 
 
 def retrieve_snippets(query: str, *, top_k: int | None = None) -> list[dict[str, str]]:
@@ -16,32 +16,32 @@ def retrieve_snippets(query: str, *, top_k: int | None = None) -> list[dict[str,
         retriever = build_hybrid_retriever(k=max(limit, settings.rerank_candidates))
         for variant in variants:
             try:
-                docs = retriever.invoke(variant)
+                with milvus_lock:
+                    docs = retriever.invoke(variant)
             except Exception:
                 docs = []
             for doc in docs:
                 text = doc.page_content.strip()
-                source = str(doc.metadata.get('source', 'vectorstore'))
+                source = str(doc.metadata.get("source", "vectorstore"))
                 key = (source, text)
                 if not text or key in seen:
                     continue
                 seen.add(key)
-                merged.append({'text': text, 'source': source})
+                merged.append({"text": text, "source": source})
     else:
-        store = get_vectorstore()
         for variant in variants:
             try:
-                docs = store.similarity_search(variant, k=limit)
+                docs = similarity_search(variant, top_k=limit)
             except Exception:
                 docs = []
             for doc in docs:
                 text = doc.page_content.strip()
-                source = str(doc.metadata.get('source', 'vectorstore'))
+                source = str(doc.metadata.get("source", "vectorstore"))
                 key = (source, text)
                 if not text or key in seen:
                     continue
                 seen.add(key)
-                merged.append({'text': text, 'source': source})
+                merged.append({"text": text, "source": source})
 
     if not merged:
         return []
@@ -50,5 +50,5 @@ def retrieve_snippets(query: str, *, top_k: int | None = None) -> list[dict[str,
         return rerank(query, merged[: max(limit, settings.rerank_candidates)], limit)
 
     for index, item in enumerate(merged[:limit], start=1):
-        item.setdefault('score', f'{1.0 / index:.6f}')
+        item.setdefault("score", f"{1.0 / index:.6f}")
     return merged[:limit]
