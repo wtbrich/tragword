@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import json
+import logging
 from collections.abc import Iterator
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import StreamingResponse
@@ -11,6 +13,9 @@ from app.config import get_settings
 from app.graph.build import build_graph
 from app.graph.interactive import resume_research, start_research
 from app.graph.stream import stream_research
+from app.rag.warmup import warmup_models
+
+logger = logging.getLogger(__name__)
 
 
 class ResearchRequest(BaseModel):
@@ -42,7 +47,23 @@ class InteractiveResumeRequest(BaseModel):
     sub_questions: list[str] | None = None
 
 
-app = FastAPI(title='Tragword Research Assistant', version='0.1.0')
+@asynccontextmanager
+async def lifespan(app: FastAPI):  # noqa: ARG001
+    settings = get_settings()
+    if settings.eager_load_models:
+        print('Model preload starting')
+        logger.info('Eager model preload enabled')
+        try:
+            warmup_models()
+            print('Model preload completed')
+            logger.info('Model preload completed')
+        except Exception as exc:
+            print(f'Model preload failed, continuing with lazy loading: {exc}')
+            logger.warning('Model preload failed, continuing with lazy loading: %s', exc)
+    yield
+
+
+app = FastAPI(title='Tragword Research Assistant', version='0.1.0', lifespan=lifespan)
 graph = build_graph()
 
 
