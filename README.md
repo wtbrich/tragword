@@ -95,6 +95,38 @@ curl -N -X POST http://127.0.0.1:8000/research/stream \
 - `MAX_REVISIONS`：最大回炉次数，防止死循环
 - `CHECKPOINT_DB`：提纲审批模式的 SQLite checkpoint 路径，默认 `.langgraph/checkpoints.sqlite`
 
+## 模型预加载
+
+首次运行会下载两个模型：
+
+- `BAAI/bge-small-zh-v1.5`，约 93M
+- `BAAI/bge-reranker-base`，约 1.1G
+
+默认缓存目录是 `~/.cache/huggingface`，可以通过 `HF_HOME` 改到其他磁盘。国内网络下建议设置：
+
+```bash
+HF_ENDPOINT=https://hf-mirror.com
+HF_HUB_DOWNLOAD_TIMEOUT=60
+```
+
+如果想先把模型预下载好，可以运行：
+
+```bash
+python scripts/warmup.py
+```
+
+如果希望服务启动时就预加载，可以设置：
+
+```bash
+EAGER_LOAD_MODELS=true
+```
+
+如果暂时不需要重排，也可以关闭它来跳过 1.1G 的 reranker 下载：
+
+```bash
+RERANK_ENABLED=false
+```
+
 ## Milvus Lite 本地模式
 
 默认使用 **Milvus Lite** 的本地 `.db` 文件模式：

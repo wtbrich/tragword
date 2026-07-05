@@ -39,6 +39,7 @@ class Settings(BaseSettings):
     chunk_size: int = Field(default=800, alias='CHUNK_SIZE')
     chunk_overlap: int = Field(default=120, alias='CHUNK_OVERLAP')
     checkpoint_db: str = Field(default='.langgraph/checkpoints.sqlite', alias='CHECKPOINT_DB')
+    eager_load_models: bool = Field(default=False, alias='EAGER_LOAD_MODELS')
 
 
 @lru_cache(maxsize=1)
